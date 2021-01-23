@@ -19,7 +19,7 @@
 */
 
 declare(strict_types=1);
-namespace Endermanbugzjfc\LevelSystem\LevelSystem;
+namespace Endermanbugzjfc\LevelSystem;
 
 use pocketmine\{
 	plugin\PluginBase
