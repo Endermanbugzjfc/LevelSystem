@@ -66,14 +66,14 @@ class LevelSystem extends PluginBase implements Listener {
 	 * @param Closure|null $callback Compatible with <code>function(?<@link SqlError>$err)</code>
 	 * @return void
 	 */
-	public function levelUp($player, int $level = 1, ?\Closure $callback = null) : void {
-		$this->db->excuteChange('levelsystem.add', [
+	public function addKill($player, int $level = 1, ?\Closure $callback = null) : void {
+		$this->db->executeChange('levelsystem.add', [
 			'uuid' => self::getUUIDString($player),
-			'level' => $level
+			'kills' => $level
 		], function(int $affected) use ($callback) : void {
-			isset($callback) $callback(null);
+			if (isset($callback)) $callback(null);
 		}, function(SqlError $err) use ($callback) : void {
-			isset($callback) $callback($err);
+			if (isset($callback)) $callback($err);
 			else throw $err;
 		});
 	}
@@ -83,8 +83,8 @@ class LevelSystem extends PluginBase implements Listener {
 	 * @param Closure|null $callback Compatible with <code>function(?<@link SqlError>$err)</code>
 	 * @return void
 	 */
-	public function levelDown($player, int $level = 1, ?\Closure $callback = null) : void {
-		self::levelUp($player, -$level, $callback);
+	public function removeKill($player, int $level = 1, ?\Closure $callback = null) : void {
+		self::addKill($player, -$level, $callback);
 	}
 
 	/**
@@ -93,12 +93,11 @@ class LevelSystem extends PluginBase implements Listener {
 	 * @param Closure|null $fail Compatible with <code>function(<@link SqlError> $err)</code>
 	 * @return void
 	 */
-	public function getLevel($player, \Closure $success, bool $nonnull = true, ?\Closure $fail = null) : void {
-		$this->db->excuteSelect('levelsystem.get', [
-			'uuid' => self::getUUIDString($player),
-			'nonnull' = $nonnull
-		], function(array $result) use ($success) : void {
-			$success($result['level'] ?? null);
+	public function getKills($player, \Closure $success, bool $nonnull = true, ?\Closure $fail = null) : void {
+		$this->db->executeSelect('levelsystem.get', [
+			'uuid' => self::getUUIDString($player)
+		], function(array $result) use ($success, $nonnull) : void {
+			$success($result[0]['kills'] ?? ($nonnull ? 0 : null));
 		}, function(SqlError $err) use ($fail) : void {
 			if (isset($fail)) $fail($err);
 			else throw $err;
@@ -111,7 +110,7 @@ class LevelSystem extends PluginBase implements Listener {
 	 * @return void
 	 */
 	public function resetLevel($player, ?\Closure $callback = null) : void {
-		$this->excuteChange('levelsystem.reset', [
+		$this->executeChange('levelsystem.reset', [
 			'uuid' => self::getUUIDString($player)
 		], function(int $affected) use ($callback) : void {
 			if (isset($callback)) $callback(null);

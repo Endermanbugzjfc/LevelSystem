@@ -1,36 +1,36 @@
 -- #! sqlite
 -- #{ levelsystem
 -- #	{ init
-CREATE TABLE IF NOT EXISTS player_levels(
+CREATE TABLE IF NOT EXISTS player_kills(
 	uuid VARCHAR(32) NOT NULL PRIMARY KEY,
-	level INT SIGNED NOT NULL
+	kills INT SIGNED NOT NULL
 );
 -- #	}
 -- #	{ add
 -- #	  :uuid string
--- #	  :value int 1
-INSERT OR REPLACE INTO player_levels(
+-- #	  :kills int 1
+INSERT OR REPLACE INTO player_kills(
 	uuid,
-	level
+	kills
 ) VALUES (
-	REPLACE (:uuid, '-', ''),
-	(
-		SELECT IFNULL(level, 0) AS level
-		FROM player_levels
-		WHERE uuid = REPLACE (:uuid, '-', '')
-	) + :value
+	LOWER(REPLACE (:uuid, '-', '')),
+	IFNULL((
+		SELECT kills
+		FROM player_kills
+		WHERE uuid = LOWER(REPLACE (:uuid, '-', ''))
+		)
+	, 0) + :kills
 );
 -- #	}
 -- #	{ get
 -- # 	  :uuid string
--- # 	  :nonnull bool true
-SELECT ISNULL(level, IF(:nonnull, 0, NULL)) AS level
-FROM player_levels
-WHERE uuid = REPLACE (:uuid, '-', '');
+SELECT kills
+FROM player_kills
+WHERE uuid = LOWER(REPLACE (:uuid, '-', ''));
 -- #	}
 -- #	{ reset
 -- # 	  :uuid string
-DELETE FROM player_levels
-WHERE uuid = REPLACE (:uuid, '-', '');
+DELETE FROM player_kills
+WHERE uuid = LOWER(REPLACE (:uuid, '-', ''));
 -- #	}
 -- #}
