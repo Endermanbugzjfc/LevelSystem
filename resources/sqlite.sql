@@ -15,21 +15,21 @@ INSERT OR REPLACE INTO player_levels(
 ) VALUES (
 	REPLACE (:uuid, '-', ''),
 	(
-		SELECT IFNULL(level, 0)
+		SELECT IFNULL(level, 0) AS level
 		FROM player_levels
 		WHERE uuid = REPLACE (:uuid, '-', '')
-	) + 1
+	) + :value
 );
 -- #	}
 -- #	{ get
 -- # 	  :uuid string
 -- # 	  :nonnull bool true
-SELECT ISNULL(level, IF(:nonnull, 0, NULL))
+SELECT ISNULL(level, IF(:nonnull, 0, NULL)) AS level
 FROM player_levels
 WHERE uuid = REPLACE (:uuid, '-', '');
 -- #	}
 -- #	{ reset
--- # 	  :uuid
+-- # 	  :uuid string
 DELETE FROM player_levels
 WHERE uuid = REPLACE (:uuid, '-', '');
 -- #	}
