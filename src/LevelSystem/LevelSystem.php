@@ -28,7 +28,7 @@ use pocketmine\event\{
 	Listener
 };
 
-use poggit\libasynql\{libasynql, DataConnector};
+use poggit\libasynql\{libasynql, DataConnector, SqlError};
 
 class LevelSystem extends PluginBase implements Listener {
 
@@ -47,9 +47,14 @@ class LevelSystem extends PluginBase implements Listener {
 		$this->db = libasynql::create($this, [
 			'type' => 'sqlite',
 			'worker-limit' => 1,
-			'sqlite' => ['file' => $this->getDataFolder()]
+			'sqlite' => ['file' => $this->getDataFolder() . 'data.db']
 		], ['sqlite' => 'sqlite.sql']);
-		$this->db->excuteGeneric('levelsystem.init');
+		$this->db->excuteGeneric('levelsystem.init', [], function() : void {
+			$this->getLogger()->log('Database initialized sccessfully');
+		}, function(SqlError $err) : void {
+			$this->getLogger()->critical('Failed to initialize database');
+			$this->getServer()->getPluginManager()->disablePlugin($this);
+		});
 		$this->db->waitAll();
 	}
 
