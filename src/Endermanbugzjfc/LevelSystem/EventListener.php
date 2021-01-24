@@ -21,11 +21,12 @@
 declare(strict_types=1);
 namespace Endermanbugzjfc\LevelSystem;
 
-use pocketmine\utils\TextFormat as TF;
+use pocketmine\{Player, utils\TextFormat as TF};
 use pocketmine\event\{
 	Listener,
 	player\PlayerPreLoginEvent,
-	player\PlayerChatEvent
+	player\PlayerChatEvent,
+	entity\EntityDamageByEntityEvent
 };
 
 use function str_ireplace;
@@ -51,7 +52,20 @@ class EventListener implements Listener {
 	 */
 	public function onPlayerChat(PlayerChatEvent $ev) : void {
 		if ($ev->isCancelled()) return;
-		$ev->setMessage(TF::colorize(str_ireplace('{level}', LevelSystem::getInstance()->getLevel($ev->getPlayer())), LevelSystem::getInstance()->getConfig()->get('level-prefix-format')));
+		$ev->setMessage(TF::colorize(str_ireplace('{level}', LevelSystem::getInstance()->getPlayerLevel($ev->getPlayer())), LevelSystem::getInstance()->getConfig()->get('level-prefix-format')));
+	}
+
+	/**
+	 * @param EntityDamageByEntityEvent $ev 
+	 * @return void
+	 * 
+	 * @priority MONITOR
+	 */
+	public function onEntityDamageByEntity(EntityDamageByEntityEvent $ev) : void {
+		if ($ev->setCancelled()) return;
+		if (!(($ev->getEntity() instanceof Player) and ($ev->getDamager() instanceof Player))) return;
+		if ($ev->getFinalDamage() < $ev->getEntity()->getHealth()) return;
+		LevelSystem::addKill($ev->getEntity());
 	}
 	
 }

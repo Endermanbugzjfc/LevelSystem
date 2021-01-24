@@ -49,14 +49,16 @@ class LevelSystem extends PluginBase {
 	
 	public function onLoad() : void {
 		self::$instance = $this;
+		$this->initConfig();
 	}
 
 	public function onEnable() : void {
-		if ($this->getPureChat() === null) {
+		if ($this->getPureChat() === null or !(bool)$this->getConfig()->get('enable-plugin')) {
 			$this->getLogger()->warning('PureChat plugin dependency is not installed or loaded!');
 			$this->getServer()->getPluginManager()->disablePlugin($this);
 			return;
 		}
+
 		$this->db = libasynql::create($this, [
 			'type' => 'sqlite',
 			'worker-limit' => 1,
@@ -70,11 +72,27 @@ class LevelSystem extends PluginBase {
 			throw $err;
 		});
 		$this->db->waitAll();
+
 		$this->getServer()->getPluginManager()->registerEvents(new EventListener, $this);
+
 		$this->getScheduler()->scheduleRepeatingEvent(new ClosureTask(function(int $ct) : void {
 			foreach ($this->getServer()->getOnlinePlayers() as $p) $rkuid[] = $p->getUUID()->toString();
 			foreach ($this->runtimekills as $puid => $kills) if (!in_array($puid, $this->runtimekills)) unset($this->runtimekills[$puid]);
-		}), 20 * 60 * 60 * 2);
+		}), 20 * 60 * (int)$conf->get('cleanup-interval-minutes', 120));
+	}
+
+	protected function initConfig() : void {
+		$this->saveDefaultConfig();
+		$conf = $this->getConfig();
+		foreach ($all = $conf->getAll() as $k => $v) $conf->remove($k);
+
+		$conf->set('enable-plugin', (bool)($all['enable-plugin'] ?? true));
+		$conf->set('level-prefix-format', (string)($all['level-prefix-format'] ?? '&e[&l{level}&r&e] '));
+		$conf->set('cleanup-interval-minutes', (int)($all['cleanup-interval-minutes'] ?? 120));
+		$conf->set('kills-per-level', (int)($all['kills-per-level'] ?? 45));
+
+		$conf->save();
+		$conf->reload();
 	}
 
 	/**
@@ -83,8 +101,10 @@ class LevelSystem extends PluginBase {
 	 * @return void
 	 */
 	public function addKill($player, int $level = 1, ?\Closure $callback = null) : void {
+		$uuid = self::getUUIDString($player);
+		if (isset($this->runtimekills[$uuid])) $this->runtimekills[$uuid] + $level;
 		$this->db->executeChange('levelsystem.add', [
-			'uuid' => self::getUUIDString($player),
+			'uuid' => $uuid,
 			'kills' => $level
 		], function(int $affected) use ($callback) : void {
 			if (isset($callback)) $callback(null);
@@ -125,7 +145,8 @@ class LevelSystem extends PluginBase {
 	 * @param Closure|null $callback Compatible with <code>function(?<@link SqlError>$err)</code>
 	 * @return void
 	 */
-	public function resetLevel($player, ?\Closure $callback = null) : void {
+	public function resetKills($player, ?\Closure $callback = null) : void {
+		if (isset($this->runtimekills[$uuid])) $this->runtimekills[$uuid] = 0;
 		$this->executeChange('levelsystem.reset', [
 			'uuid' => self::getUUIDString($player)
 		], function(int $affected) use ($callback) : void {
@@ -136,15 +157,14 @@ class LevelSystem extends PluginBase {
 		});
 	}
 
+	/**
+	 * @internal
+	 */
 	public function loadRuntimeKills(Player $player) : void {
 		$uuid = $player->getUUID()->toString();
 		$this->getKills($player, function(?int $kills) use ($uuid) : void {
 			$this->runtimekills[$uuid] = $kills;
 		}, true);
-	}
-
-	public function getRuntimeKills(Player $player) : ?int {
-		return $this->runtimekills[$player->getUUID()->toString()] ?? 0;
 	}
 
 	public function onDisable() : void {
