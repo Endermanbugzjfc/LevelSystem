@@ -157,14 +157,15 @@ class LevelSystem extends PluginBase {
 		});
 	}
 
-	/**
-	 * @internal
-	 */
 	public function loadRuntimeKills(Player $player) : void {
 		$uuid = $player->getUUID()->toString();
 		$this->getKills($player, function(?int $kills) use ($uuid) : void {
 			$this->runtimekills[$uuid] = $kills;
 		}, true);
+	}
+
+	public function getRuntimeKills(Player $player) : ?int {
+		return $this->runtimekills[$player->getUUID()->toString()] ?? 0;
 	}
 
 	public function onDisable() : void {

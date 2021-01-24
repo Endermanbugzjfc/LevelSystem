@@ -52,7 +52,7 @@ class EventListener implements Listener {
 	 */
 	public function onPlayerChat(PlayerChatEvent $ev) : void {
 		if ($ev->isCancelled()) return;
-		$ev->setMessage(TF::colorize(str_ireplace('{level}', LevelSystem::getInstance()->getPlayerLevel($ev->getPlayer())), LevelSystem::getInstance()->getConfig()->get('level-prefix-format')));
+		$ev->setMessage(TF::colorize(str_ireplace('{level}', (int)(LevelSystem::getInstance()->getRuntimeKills($ev->getPlayer()) / (int)LevelSystem::getInstance()->getConfig()->get('kills-per-level'))), LevelSystem::getInstance()->getConfig()->get('level-prefix-format')));
 	}
 
 	/**
