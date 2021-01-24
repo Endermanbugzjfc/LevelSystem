@@ -24,15 +24,16 @@ namespace Endermanbugzjfc\LevelSystem;
 use pocketmine\{
 	Player,
 	plugin\PluginBase,
-	utils\UUID
-};
-use pocketmine\event\{
-	Listener
+	utils\UUID,
+	scheduler\ClosureTask
 };
 
 use poggit\libasynql\{libasynql, DataConnector, SqlError};
+use _64FF00\PureChat;
 
-class LevelSystem extends PluginBase implements Listener {
+use function in_array;
+
+class LevelSystem extends PluginBase {
 
 	private static $instance = null;
 
@@ -40,12 +41,22 @@ class LevelSystem extends PluginBase implements Listener {
 	 * @var DataConnector|null
 	 */
 	private $db = null;
+
+	/**
+	 * @var array<string, int>
+	 */
+	private $runtimekills = [];
 	
 	public function onLoad() : void {
 		self::$instance = $this;
 	}
 
 	public function onEnable() : void {
+		if ($this->getPureChat() === null) {
+			$this->getLogger()->warning('PureChat plugin dependency is not installed or loaded!');
+			$this->getServer()->getPluginManager()->disablePlugin($this);
+			return;
+		}
 		$this->db = libasynql::create($this, [
 			'type' => 'sqlite',
 			'worker-limit' => 1,
@@ -59,6 +70,11 @@ class LevelSystem extends PluginBase implements Listener {
 			throw $err;
 		});
 		$this->db->waitAll();
+		$this->getServer()->getPluginManager()->registerEvents(new EventListener, $this);
+		$this->getScheduler()->scheduleRepeatingEvent(new ClosureTask(function(int $ct) : void {
+			foreach ($this->getServer()->getOnlinePlayers() as $p) $rkuid[] = $p->getUUID()->toString();
+			foreach ($this->runtimekills as $puid => $kills) if (!in_array($puid, $this->runtimekills)) unset($this->runtimekills[$puid]);
+		}), 20 * 60 * 60 * 2);
 	}
 
 	/**
@@ -120,6 +136,17 @@ class LevelSystem extends PluginBase implements Listener {
 		});
 	}
 
+	public function loadRuntimeKills(Player $player) : void {
+		$uuid = $player->getUUID()->toString();
+		$this->getKills($player, function(?int $kills) use ($uuid) : void {
+			$this->runtimekills[$uuid] = $kills;
+		}, true);
+	}
+
+	public function getRuntimeKills(Player $player) : ?int {
+		return $this->runtimekills[$player->getUUID()->toString()] ?? 0;
+	}
+
 	public function onDisable() : void {
 		if (isset($this->db)) $this->db->close();
 	}
@@ -140,6 +167,11 @@ class LevelSystem extends PluginBase implements Listener {
 		if ($uuid instanceof Player) $uuid = $player->getUUID();
 		if ($uuid instanceof UUID) $uuid = $uuid->toString();
 		return $uuid;
+	}
+
+	public function getPureChat() : ?PureChat {
+		foreach ($this->getServer()->getPluginManager()->getPlugins() as $pl) if ($pl instanceof PureChat) return $pl;
+		return null;
 	}
 
 }
