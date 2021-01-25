@@ -37,10 +37,10 @@ class EventListener implements Listener {
 	 * @param PlayerPreLoginEvent $ev 
 	 * @return void
 	 * 
+	 * @ignoreCancelled
 	 * @priority MONITOR
 	 */
 	public function onPlayerPreLogin(PlayerPreLoginEvent $ev) : void {
-		if ($ev->isCancelled()) return;
 		LevelSystem::getInstance()->loadRuntimeKills($ev->getPlayer());
 	}
 
@@ -48,24 +48,28 @@ class EventListener implements Listener {
 	 * @param PlayerChatEvent $ev 
 	 * @return void
 	 * 
-	 * @priority HIGHEST
+	 * @ignoreCancelled
+	 * @priority MONITOR
 	 */
 	public function onPlayerChat(PlayerChatEvent $ev) : void {
-		if ($ev->isCancelled()) return;
-		$ev->setMessage(TF::colorize(str_ireplace('{level}', (int)(LevelSystem::getInstance()->getRuntimeKills($ev->getPlayer()) / (int)LevelSystem::getInstance()->getConfig()->get('kills-per-level'))), LevelSystem::getInstance()->getConfig()->get('level-prefix-format')));
+		$ev->setFormat(TF::colorize(
+			str_ireplace('{level}',
+				(int)(LevelSystem::getInstance()->getRuntimeKills($ev->getPlayer()) / (int)LevelSystem::getInstance()->getConfig()->get('kills-per-level')),
+				LevelSystem::getInstance()->getConfig()->get('level-prefix-format'))
+		) . $ev->getFormat());
 	}
 
 	/**
 	 * @param EntityDamageByEntityEvent $ev 
 	 * @return void
 	 * 
+	 * @ignoreCancelled
 	 * @priority MONITOR
 	 */
 	public function onEntityDamageByEntity(EntityDamageByEntityEvent $ev) : void {
-		if ($ev->setCancelled()) return;
 		if (!(($ev->getEntity() instanceof Player) and ($ev->getDamager() instanceof Player))) return;
 		if ($ev->getFinalDamage() < $ev->getEntity()->getHealth()) return;
-		LevelSystem::addKill($ev->getEntity());
+		LevelSystem::getInstance()->addKill($ev->getEntity());
 	}
 	
 }

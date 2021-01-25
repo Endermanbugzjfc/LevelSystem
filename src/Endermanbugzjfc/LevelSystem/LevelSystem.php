@@ -29,7 +29,7 @@ use pocketmine\{
 };
 
 use poggit\libasynql\{libasynql, DataConnector, SqlError};
-use _64FF00\PureChat;
+use _64FF00\PureChat\PureChat;
 
 use function in_array;
 
@@ -75,10 +75,10 @@ class LevelSystem extends PluginBase {
 
 		$this->getServer()->getPluginManager()->registerEvents(new EventListener, $this);
 
-		$this->getScheduler()->scheduleRepeatingEvent(new ClosureTask(function(int $ct) : void {
-			foreach ($this->getServer()->getOnlinePlayers() as $p) $rkuid[] = $p->getUUID()->toString();
+		$this->getScheduler()->scheduleRepeatingTask(new ClosureTask(function(int $ct) : void {
+			foreach ($this->getServer()->getOnlinePlayers() as $p) $rkuid[] = $p->getUniqueId()->toString();
 			foreach ($this->runtimekills as $puid => $kills) if (!in_array($puid, $this->runtimekills)) unset($this->runtimekills[$puid]);
-		}), 20 * 60 * (int)$conf->get('cleanup-interval-minutes', 120));
+		}), 20 * 60 * (int)$this->getConfig()->get('cleanup-interval-minutes', 120));
 	}
 
 	protected function initConfig() : void {
@@ -158,14 +158,14 @@ class LevelSystem extends PluginBase {
 	}
 
 	public function loadRuntimeKills(Player $player) : void {
-		$uuid = $player->getUUID()->toString();
+		$uuid = $player->getUniqueId()->toString();
 		$this->getKills($player, function(?int $kills) use ($uuid) : void {
 			$this->runtimekills[$uuid] = $kills;
 		}, true);
 	}
 
 	public function getRuntimeKills(Player $player) : ?int {
-		return $this->runtimekills[$player->getUUID()->toString()] ?? 0;
+		return $this->runtimekills[$player->getUniqueId()->toString()] ?? 0;
 	}
 
 	public function onDisable() : void {
@@ -185,7 +185,7 @@ class LevelSystem extends PluginBase {
 	 * @return string
 	 */
 	protected static function getUUIDString($uuid) : string {
-		if ($uuid instanceof Player) $uuid = $player->getUUID();
+		if ($uuid instanceof Player) $uuid = $uuid->getUniqueId();
 		if ($uuid instanceof UUID) $uuid = $uuid->toString();
 		return $uuid;
 	}
