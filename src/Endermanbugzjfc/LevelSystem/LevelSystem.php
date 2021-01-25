@@ -73,6 +73,8 @@ class LevelSystem extends PluginBase {
 		});
 		$this->db->waitAll();
 
+		foreach ($this->getServer()->getOnlinePlayers() as $p) $this->loadRuntimeKills($p);
+
 		$this->getServer()->getPluginManager()->registerEvents(new EventListener, $this);
 
 		$this->getScheduler()->scheduleRepeatingTask(new ClosureTask(function(int $ct) : void {
@@ -102,7 +104,7 @@ class LevelSystem extends PluginBase {
 	 */
 	public function addKill($player, int $level = 1, ?\Closure $callback = null) : void {
 		$uuid = self::getUUIDString($player);
-		if (isset($this->runtimekills[$uuid])) $this->runtimekills[$uuid] + $level;
+		if (isset($this->runtimekills[$uuid])) $this->runtimekills[$uuid]+=$level;
 		$this->db->executeChange('levelsystem.add', [
 			'uuid' => $uuid,
 			'kills' => $level
@@ -159,8 +161,10 @@ class LevelSystem extends PluginBase {
 
 	public function loadRuntimeKills(Player $player) : void {
 		$uuid = $player->getUniqueId()->toString();
+		$this->getLogger()->debug('Requsted to load runtime kills for player "' . $player->getName() . '"(UUID: "' . $uuid . '"")');
 		$this->getKills($player, function(?int $kills) use ($uuid) : void {
 			$this->runtimekills[$uuid] = $kills;
+			$this->getLogger()->debug('Loaded runtime kills for "' . $uuid . '": ' . $kills);
 		}, true);
 	}
 
@@ -169,7 +173,10 @@ class LevelSystem extends PluginBase {
 	}
 
 	public function onDisable() : void {
-		if (isset($this->db)) $this->db->close();
+		if (isset($this->db)) {
+			$this->db->close();
+			$this->db = null;
+		}
 	}
 
 	public function getDataConnectorInstance() : ?DataConnector {

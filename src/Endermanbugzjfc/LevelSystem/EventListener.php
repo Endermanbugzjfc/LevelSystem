@@ -69,7 +69,7 @@ class EventListener implements Listener {
 	public function onEntityDamageByEntity(EntityDamageByEntityEvent $ev) : void {
 		if (!(($ev->getEntity() instanceof Player) and ($ev->getDamager() instanceof Player))) return;
 		if ($ev->getFinalDamage() < $ev->getEntity()->getHealth()) return;
-		LevelSystem::getInstance()->addKill($ev->getEntity());
+		LevelSystem::getInstance()->addKill($ev->getDamager());
 	}
 	
 }
