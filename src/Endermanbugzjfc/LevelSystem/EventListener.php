@@ -70,6 +70,11 @@ class EventListener implements Listener {
 		if (!(($ev->getEntity() instanceof Player) and ($ev->getDamager() instanceof Player))) return;
 		if ($ev->getFinalDamage() < $ev->getEntity()->getHealth()) return;
 		LevelSystem::getInstance()->addKill($ev->getDamager());
+		$kt = (string)LevelSystem::getInstance()->getConfig()->get('kill-tips');
+		$lm = (string)LevelSystem::getInstance()->getConfig()->get('levelup-msg');
+		$nlv = LevelSystem::getInstance()->getRuntimeKills($ev->getPlayer()) / (int)LevelSystem::getInstance()->getConfig()->get('kills-per-level');
+		if ((int)$nlv == $nvl) if (!empty($ml)) $p->sendMessage(Utils::treatTagsAndColors($ml));
+		else if (!empty($kt))  $p->sendPopup(Utils::treatTagsAndColors($kt));
 	}
 	
 }

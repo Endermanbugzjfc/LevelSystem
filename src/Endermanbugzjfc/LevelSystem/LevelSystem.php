@@ -92,6 +92,8 @@ class LevelSystem extends PluginBase {
 		$conf->set('level-prefix-format', (string)($all['level-prefix-format'] ?? '&e[&l{level}&r&e] '));
 		$conf->set('cleanup-interval-minutes', (int)($all['cleanup-interval-minutes'] ?? 120));
 		$conf->set('kills-per-level', (int)($all['kills-per-level'] ?? 45));
+		$conf->set('kill-tips', (string)($all['kill-tips'] ?? '&eYou have killed &6{target} &ewith &b{item-in-hand}, &l&eyou need &6{kills}&e more kills to reach level &a{next-level}!'));
+		$conf->set('levelup-msg', (string)($all['levelup-msg'] ?? '&l&eYou have &6reached&e level &a{current-level}'));
 
 		$conf->save();
 		$conf->reload();
@@ -102,12 +104,12 @@ class LevelSystem extends PluginBase {
 	 * @param Closure|null $callback Compatible with <code>function(?<@link SqlError>$err)</code>
 	 * @return void
 	 */
-	public function addKill($player, int $level = 1, ?\Closure $callback = null) : void {
+	public function addKill($player, int $kills = 1, ?\Closure $callback = null) : void {
 		$uuid = self::getUUIDString($player);
-		if (isset($this->runtimekills[$uuid])) $this->runtimekills[$uuid]+=$level;
+		if (isset($this->runtimekills[$uuid])) $this->runtimekills[$uuid]+=$kills;
 		$this->db->executeChange('levelsystem.add', [
 			'uuid' => $uuid,
-			'kills' => $level
+			'kills' => $kills
 		], function(int $affected) use ($callback) : void {
 			if (isset($callback)) $callback(null);
 		}, function(SqlError $err) use ($callback) : void {
@@ -121,13 +123,13 @@ class LevelSystem extends PluginBase {
 	 * @param Closure|null $callback Compatible with <code>function(?<@link SqlError>$err)</code>
 	 * @return void
 	 */
-	public function removeKill($player, int $level = 1, ?\Closure $callback = null) : void {
-		self::addKill($player, -$level, $callback);
+	public function removeKill($player, int $kills = 1, ?\Closure $callback = null) : void {
+		self::addKill($player, -$kills, $callback);
 	}
 
 	/**
 	 * @param Player|UUID|string $player 
-	 * @param Closure|null $success Compatible with <code>function(?int $level)</code>
+	 * @param Closure|null $success Compatible with <code>function(?int $kills)</code>
 	 * @param Closure|null $fail Compatible with <code>function(<@link SqlError> $err)</code>
 	 * @return void
 	 */
