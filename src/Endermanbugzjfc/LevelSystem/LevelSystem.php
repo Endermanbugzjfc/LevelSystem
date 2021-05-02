@@ -65,6 +65,8 @@ class LevelSystem extends PluginBase {
         $conf->set('cleanup-interval-minutes', (int)($all['cleanup-interval-minutes'] ?? 120));
         $conf->set('kills-per-level', (int)($all['kills-per-level'] ?? 45));
         $conf->set('kill-tips', (string)($all['kill-tips'] ?? '&eYou have killed &6{target} &ewith &b{item-in-hand}, &l&eyou need &6{kills}&e more kills to reach level &a{next-level}!'));
+        $conf->set('levelup-title', (string)($all['level-up-title'] ?? '&l&Congratulations'));
+        $conf->set('levelup-subtitle', (string)($all['level-up-subtitle'] ?? '&eLevel reached: {current-level}'));
         $conf->set('levelup-msg', (string)($all['levelup-msg'] ?? '&l&eYou have &6reached&e level &a{current-level}'));
 
         $conf->save();
