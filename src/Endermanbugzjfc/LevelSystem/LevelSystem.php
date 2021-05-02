@@ -24,7 +24,6 @@ namespace Endermanbugzjfc\LevelSystem;
 
 use pocketmine\Player;
 use pocketmine\utils\UUID;
-use _64FF00\PureChat\PureChat;
 use poggit\libasynql\SqlError;
 use poggit\libasynql\libasynql;
 use pocketmine\plugin\PluginBase;
@@ -46,6 +45,28 @@ class LevelSystem extends PluginBase {
      * @var array<string, int>
      */
     private $runtimekills = [];
+    /**
+     * @var string|null
+     */
+    private $mostkilled_uuid = null;
+    /**
+     * @var int|null
+     */
+    private $mostkilled_kills = null;
+
+    /**
+     * @return string|null
+     */
+    public function getMostkilledUUID() : ?string {
+        return $this->mostkilled_uuid;
+    }
+
+    /**
+     * @return int|null
+     */
+    public function getMostkilledKills() : ?int {
+        return $this->mostkilled_kills;
+    }
 
     public static function getInstance() : ?self {
         return self::$instance;
@@ -75,12 +96,6 @@ class LevelSystem extends PluginBase {
     }
 
     public function onEnable() : void {
-        if ($this->getPureChat() === null or !(bool)$this->getConfig()->get('enable-plugin')) {
-            $this->getLogger()->warning('PureChat plugin dependency is not installed or loaded!');
-            $this->getServer()->getPluginManager()->disablePlugin($this);
-            return;
-        }
-
         $this->db = libasynql::create($this, [
             'type' => 'sqlite',
             'worker-limit' => 1,
@@ -95,6 +110,19 @@ class LevelSystem extends PluginBase {
         });
         $this->db->waitAll();
 
+        $this->runtimekills = []; // Reset runtime kills for the "/reload" command
+        $this->db->executeSelect('levelsystem.get_mostkilled', [], function(array $result) : void {
+            if (!isset($result[0])) {
+                $this->getLogger()->debug('No most killed player loaded');
+                return;
+            }
+            $result = $result[0];
+            if (isset($result['uuid'])) $this->mostkilled_uuid = (string)$result['uuid'];
+            if (isset($result['kills'])) $this->mostkilled_kills = (int)$result['kills'];
+            $this->getLogger()->debug('Loaded the most killed player, UUID: ' . ($result['uuid'] ?? 'NULL') . ', kills: ' . ($result['kills'] ?? 'NULL'));
+        }, function(SqlError $err) : void {
+            throw $err;
+        });
         foreach ($this->getServer()->getOnlinePlayers() as $p) $this->loadRuntimeKills($p);
 
         $this->getServer()->getPluginManager()->registerEvents(new EventListener, $this);
@@ -103,11 +131,6 @@ class LevelSystem extends PluginBase {
             foreach ($this->getServer()->getOnlinePlayers() as $p) $rkuid[] = $p->getUniqueId()->toString();
             foreach ($this->runtimekills as $puid => $kills) if (!in_array($puid, $this->runtimekills)) unset($this->runtimekills[$puid]);
         }), 20 * 60 * (int)$this->getConfig()->get('cleanup-interval-minutes', 120));
-    }
-
-    public function getPureChat() : ?PureChat {
-        foreach ($this->getServer()->getPluginManager()->getPlugins() as $pl) if ($pl instanceof PureChat) return $pl;
-        return null;
     }
 
     public function loadRuntimeKills(Player $player) : void {

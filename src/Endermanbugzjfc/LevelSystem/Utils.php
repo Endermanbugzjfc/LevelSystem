@@ -32,11 +32,15 @@ class Utils {
     public static function treatTagsAndColors(string $string, Player $player, Player $target) : string {
         $string = str_ireplace('{target}', $target->getName(), $string);
         $string = str_ireplace('{item-in-hand}', $player->getInventory()->getItemInHand()->getId() === Item::AIR ? 'Fist' : $player->getInventory()->getItemInHand()->getName(), $string);
-        $level = (int)(LevelSystem::getInstance()->getRuntimeKills($player) / (int)LevelSystem::getInstance()->getConfig()->get('kills-per-level')); // The (int) floors the value
         $string = str_ireplace('{kills}', (string)(LevelSystem::getInstance()->getRuntimeKills($player) ?? 1), $string);
+
+        $level = (int)(LevelSystem::getInstance()->getRuntimeKills($player) / $kpl = (int)LevelSystem::getInstance()->getConfig()->get('kills-per-level')); // The (int) floors the value
         $string = str_ireplace('{next-level}', (string)($level + 1), $string);
         $string = str_ireplace('{current-level}', (string)$level, $string);
         $string = str_ireplace('{previous-level}', (string)($level - 1), $string);
+
+        $string = str_ireplace('{most-killed}', (string)(int)LevelSystem::getInstance()->getMostkilledKills(), $string);
+        $string = str_ireplace('{most-killed-level}', (string)(int)((int)LevelSystem::getInstance()->getMostkilledKills() / $kpl), $string);
 
         return TF::colorize($string);
     }

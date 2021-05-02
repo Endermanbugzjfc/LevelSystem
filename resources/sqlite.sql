@@ -28,6 +28,12 @@ SELECT kills
 FROM player_kills
 WHERE uuid = LOWER(REPLACE(:uuid, '-', ''));
 -- #	}
+-- #    { get_mostkilled
+SELECT *
+FROM player_kills
+ORDER BY kills DESC
+LIMIT 1;
+-- #    }
 -- #	{ reset
 -- # 	  :uuid string
 DELETE
