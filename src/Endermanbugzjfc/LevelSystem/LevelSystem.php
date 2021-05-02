@@ -118,8 +118,9 @@ class LevelSystem extends PluginBase {
 
     /**
      * @param Player|UUID|string $player
-     * @param Closure|null $success Compatible with <code>function(?int $kills)</code>
-     * @param Closure|null $fail Compatible with <code>function(<@link SqlError> $err)</code>
+     * @param \Closure $success Compatible with <code>function(?int $kills)</code>
+     * @param bool $nonnull
+     * @param \Closure|null $fail Compatible with <code>function(<@link SqlError> $err)</code>
      * @return void
      */
     public function getKills($player, \Closure $success, bool $nonnull = true, ?\Closure $fail = null) : void {
@@ -145,7 +146,8 @@ class LevelSystem extends PluginBase {
 
     /**
      * @param Player|UUID|string $player
-     * @param Closure|null $callback Compatible with <code>function(?<@link SqlError>$err)</code>
+     * @param int $kills
+     * @param \Closure|null $callback Compatible with <code>function(?<@link SqlError>$err)</code>
      * @return void
      */
     public function removeKill($player, int $kills = 1, ?\Closure $callback = null) : void {
@@ -154,7 +156,8 @@ class LevelSystem extends PluginBase {
 
     /**
      * @param Player|UUID|string $player
-     * @param Closure|null $callback Compatible with <code>function(?<@link SqlError>$err)</code>
+     * @param int $kills
+     * @param \Closure|null $callback Compatible with <code>function(?<@link SqlError>$err)</code>
      * @return void
      */
     public function addKill($player, int $kills = 1, ?\Closure $callback = null) : void {
@@ -173,12 +176,13 @@ class LevelSystem extends PluginBase {
 
     /**
      * @param Player|UUID|string $player
-     * @param Closure|null $callback Compatible with <code>function(?<@link SqlError>$err)</code>
+     * @param \Closure|null $callback Compatible with <code>function(?<@link SqlError>$err)</code>
      * @return void
      */
     public function resetKills($player, ?\Closure $callback = null) : void {
+        $uuid = self::getUUIDString($player);
         if (isset($this->runtimekills[$uuid])) $this->runtimekills[$uuid] = 0;
-        $this->executeChange('levelsystem.reset', [
+        $this->db->executeChange('levelsystem.reset', [
             'uuid' => self::getUUIDString($player)
         ], function(int $affected) use ($callback) : void {
             if (isset($callback)) $callback(null);
