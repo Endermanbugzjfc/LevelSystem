@@ -29,10 +29,11 @@ use function str_ireplace;
 
 class Utils {
 
-    public static function treatTagsAndColors(string $string, Player $target) : string {
+    public static function treatTagsAndColors(string $string, Player $player, Player $target) : string {
         $string = str_ireplace('{target}', $target->getName(), $string);
-        $string = str_ireplace('{item-in-hand}', $target->getInventory()->getItemInHand()->getId() === Item::AIR ? 'Fist' : $target->getInventory()->getItemInHand()->getName(), $string);
-        $level = LevelSystem::getInstance()->getRuntimeKills($target) / (int)LevelSystem::getInstance()->getConfig()->get('kills-per-level');
+        $string = str_ireplace('{item-in-hand}', $player->getInventory()->getItemInHand()->getId() === Item::AIR ? 'Fist' : $player->getInventory()->getItemInHand()->getName(), $string);
+        $level = (int)(LevelSystem::getInstance()->getRuntimeKills($player) / (int)LevelSystem::getInstance()->getConfig()->get('kills-per-level')); // The (int) floors the value
+        $string = str_ireplace('{kills}', (string)(LevelSystem::getInstance()->getRuntimeKills($player) ?? 1), $string);
         $string = str_ireplace('{next-level}', (string)($level + 1), $string);
         $string = str_ireplace('{current-level}', (string)$level, $string);
         $string = str_ireplace('{previous-level}', (string)($level - 1), $string);

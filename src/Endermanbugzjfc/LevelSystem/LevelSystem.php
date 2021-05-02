@@ -31,6 +31,7 @@ use pocketmine\plugin\PluginBase;
 use poggit\libasynql\DataConnector;
 use pocketmine\scheduler\ClosureTask;
 use function in_array;
+use function strtolower;
 
 class LevelSystem extends PluginBase {
 
@@ -65,7 +66,7 @@ class LevelSystem extends PluginBase {
         $conf->set('cleanup-interval-minutes', (int)($all['cleanup-interval-minutes'] ?? 120));
         $conf->set('kills-per-level', (int)($all['kills-per-level'] ?? 45));
         $conf->set('kill-tips', (string)($all['kill-tips'] ?? '&eYou have killed &6{target} &ewith &b{item-in-hand}, &l&eyou need &6{kills}&e more kills to reach level &a{next-level}!'));
-        $conf->set('levelup-title', (string)($all['level-up-title'] ?? '&l&Congratulations'));
+        $conf->set('levelup-title', (string)($all['level-up-title'] ?? '&l&6Congratulations'));
         $conf->set('levelup-subtitle', (string)($all['level-up-subtitle'] ?? '&eLevel reached: {current-level}'));
         $conf->set('levelup-msg', (string)($all['levelup-msg'] ?? '&l&eYou have &6reached&e level &a{current-level}'));
 
@@ -110,12 +111,12 @@ class LevelSystem extends PluginBase {
     }
 
     public function loadRuntimeKills(Player $player) : void {
-        $uuid = $player->getUniqueId()->toString();
+        $uuid = self::getUUIDString($player);
         $this->getLogger()->debug('Requsted to load runtime kills for player "' . $player->getName() . '"(UUID: "' . $uuid . '"")');
         $this->getKills($player, function(?int $kills) use ($uuid) : void {
             $this->runtimekills[$uuid] = $kills;
             $this->getLogger()->debug('Loaded runtime kills for "' . $uuid . '": ' . $kills);
-        }, true);
+        });
     }
 
     /**
@@ -143,7 +144,7 @@ class LevelSystem extends PluginBase {
     protected static function getUUIDString($uuid) : string {
         if ($uuid instanceof Player) $uuid = $uuid->getUniqueId();
         if ($uuid instanceof UUID) $uuid = $uuid->toString();
-        return $uuid;
+        return strtolower($uuid);
     }
 
     /**
@@ -195,7 +196,7 @@ class LevelSystem extends PluginBase {
     }
 
     public function getRuntimeKills(Player $player) : ?int {
-        return $this->runtimekills[$player->getUniqueId()->toString()] ?? 0;
+        return $this->runtimekills[self::getUUIDString($player)] ?? 0;
     }
 
     public function onDisable() : void {
