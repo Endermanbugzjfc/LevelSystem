@@ -71,11 +71,20 @@ class EventListener implements Listener {
         if (!(($sp instanceof Player) and ($p instanceof Player))) return;
         if ($ev->getFinalDamage() < $sp->getHealth()) return;
         LevelSystem::getInstance()->addKill($ev->getDamager());
+
         $kt = (string)LevelSystem::getInstance()->getConfig()->get('kill-tips');
-        $ml = (string)LevelSystem::getInstance()->getConfig()->get('levelup-msg');
         $nlv = LevelSystem::getInstance()->getRuntimeKills($p) / (int)LevelSystem::getInstance()->getConfig()->get('kills-per-level');
-        if ((int)$nlv == $nlv) if (!empty($ml)) $p->sendMessage(Utils::treatTagsAndColors($ml, $sp));
-        else if (!empty($kt)) $p->sendPopup(Utils::treatTagsAndColors($kt, $sp));
+
+        if (!empty($kt)) $p->sendPopup(Utils::treatTagsAndColors($kt, $sp));
+        if ((int)$nlv == $nlv) {
+            $ml = (string)LevelSystem::getInstance()->getConfig()->get('levelup-msg');
+            $tl = (string)LevelSystem::getInstance()->getConfig()->get('levelup-title');
+            $sl = (string)LevelSystem::getInstance()->getConfig()->get('levelup-subtitle');
+
+            if (!empty($ml)) $p->sendMessage(Utils::treatTagsAndColors($ml, $sp));
+            if (!empty($tl)) $p->sendMessage(Utils::treatTagsAndColors($tl, $sp));
+            if (!empty($sl)) $p->sendMessage(Utils::treatTagsAndColors($sl, $sp));
+        }
     }
 
 }
